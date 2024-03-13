@@ -22,7 +22,7 @@
 1. To run this analysis, you'll need to have the packages installed in conda virtual environment ("requirements_python.txt")
 - conda create --name jaewonml python=3.8.16
 - conda activate jaewonml
-- pip install -r .\requirements_article1.txt
+- pip install -r .\requirements_python.txt
 
 ## Setup for R script
 1. To run this analysis, you'll need to have the following packages installed:
