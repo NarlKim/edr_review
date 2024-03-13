@@ -49,6 +49,7 @@ This repo contains the following folders : analysis, data
 - emotion_trajectory_experiece_org_AE_label_clinical_ratings_n476.csv : a dataframe that contains experienced emotion trajectory of participants. Each row corresponds to a single participant.
 - reward_accept_trajectory_n476.csv : a dataframe that contains reward acceptance trajectory of participants. Each row corresponds to a single participant.
 - reward_expect_trajectory_n476.csv : a dataframe that contains expected reward trajectory of participants. Each row corresponds to a single participant.
+
 **The following 4 csv files** contain dataframes that contain ECT responses for each emotion label.
 - emotions_arousal_imp.csv
 - emotions_focus_imp.csv
