@@ -7,7 +7,7 @@ library(here)
 library(tidyverse)
 library(lme4)
 library(sjPlot)       # clean tables
-##### Line 8-46 correspond to raw data preprocessing
+##### Line 11-72 correspond to raw data preprocessing
 # Raw data paths
 dir_analysis <- "C:/Users/user/Desktop/Proposal/Experiments/Moral_Ultimatum_Game_Analysis/article1/publication/analysis" # should be where analysis script is stored
 dir_parent <- dir_analysis %>% str_remove("/analysis")
@@ -36,6 +36,7 @@ for (i in 1:30) {
 }
 
 emotion_experience_group <- emo_experience_traj[, "AE_cluster_experience"]
+emotion_expect_group <- emo_expect_traj[, "AE_cluster_expect"]
 
 valence_traj_experience <- emo_experience_traj[, columns_valence]
 arousal_traj_experience <- emo_experience_traj[, columns_arousal]
@@ -57,14 +58,19 @@ arousal_expect[, "emotion_experience_group"] <- emotion_experience_group
 focus_expect[, "emotion_experience_group"] <- emotion_experience_group
 dominance_expect[, "emotion_experience_group"] <- emotion_experience_group
 
-##### Line 48-58 correspond to deciding the optimal K for reward group
+valence_expect[, "emotion_expect_group"] <- emotion_expect_group
+arousal_expect[, "emotion_expect_group"] <- emotion_expect_group
+focus_expect[, "emotion_expect_group"] <- emotion_expect_group
+dominance_expect[, "emotion_expect_group"] <- emotion_expect_group
+
 ### Figure S1-2 : Extract only time series portion and find optimal number of clusters by k-means
-reward_accept_traj_times <- reward_accept_traj %>% select(c(2:31))
-reward_expect_traj_times <- reward_expect_traj %>% select(c(2:31))
+reward_accept_traj_times <- reward_accept_traj %>% select(c(1:30))
+reward_expect_traj_times <- reward_expect_traj %>% select(c(1:30))
 reward_given <- c(0, 0, 2, 1, 0, 3, 0, 1, 1, 1, 2, 3, 3, 4, 2, 3, 2, 2, 3, 4, 6, 5, 4, 4, 5, 4, 7, 5, 5, 4) ### Actual proposer offer
 reward_given <- data.frame(reward_given = reward_given)
 reward_given$time_point <- seq_len(nrow(reward_given))
 
+##### Line 73-82 correspond to deciding the optimal K for reward group
 # Figure S1
 fviz_nbclust(reward_expect_traj_times, kmeans, method = "wss") +
   geom_vline(xintercept = 4, linetype = 2) 
@@ -72,7 +78,7 @@ fviz_nbclust(reward_expect_traj_times, kmeans, method = "wss") +
 # Figure S2
 fviz_nbclust(reward_accept_traj_times, kmeans, method = "wss") + 
   geom_vline(xintercept = 4, linetype = 2) 
-##### Line 60 - 106 correspond to 1) K-means clustering or reward acceptance trajectories,
+##### Line 82 - 146 correspond to 1) K-means clustering or reward acceptance trajectories,
 ##### and then 2) pivoting the trajectory to a long dataframe
 # K-means clustering of reward acceptance trajectories with k = 4
 set.seed(123)
@@ -139,7 +145,7 @@ sd_long <- pivot_longer(standard_deviation,
 merged_df <- merge(mean_long, sd_long, by = c("group", "time_point"))
 merged_df$time_point <- as.numeric(as.character(merged_df$time_point))
 
-##### Line 110 - 257 correspond to 1) extracting central tendency of experience emotion trajectories,
+##### Line 149 - 297 correspond to 1) extracting central tendency of experience emotion trajectories,
 ##### and then 2) pivoting the trajectories to long dataframes
 # Mean and standard deviations of experienced valence at each time point for each group
 standard_deviation_val <- data.frame()
@@ -290,7 +296,7 @@ dom_long_sd <- pivot_longer(standard_deviation_dom,
 merged_df_dom <- merge(dom_long, dom_long_sd, by = c("group", "time_point"))
 merged_df_dom$time_point <- as.numeric(as.character(merged_df_dom$time_point))
 
-##### Lines 260 - 307 correspond to Figures 2 and 3
+##### Lines 300 - 350 correspond to Figures 2 and 3
 # Define a color palette
 # Adjust the number of colors based on the number of groups you have
 color_palette <- c("blue", "red", "green", "orange")  # Example colors for 4 groups
@@ -340,17 +346,10 @@ ggplot(merged_df_dom, aes(x = time_point, y = dominance, group = group)) +
   theme_minimal() +
   labs(x = "Time Point", y = "Dominance Centroid", color = "Group", fill = "Group")
 
-# Significance of centroid mean comparison
-set.seed(123)
-#reward_accept_traj_times
-model_acc <- aov(mean_response~as.factor(group), data=merged_df) #one-way ANOVA for existence of group difference
-model_acc2<- aov(mean_response~group, data=reward_accept_traj_times) 
-summary(model_acc)
 
-TukeyHSD(model_acc, conf.level=.95)
-
+##### Lines 352 - 602 correspond to GLMM analyses
 ##### GLMM analyses on relationship between reward PE, emotion PEs and decisions to accept
-### Preprocessing
+### Preprocessing of the data so that it becomes appropriate for glmer function input.
 valence_traj_experience_ <- valence_traj_experience[, 1:30]
 arousal_traj_experience_ <- arousal_traj_experience[, 1:30]
 focus_traj_experience_ <- focus_traj_experience[, 1:30]
@@ -381,36 +380,34 @@ colnames(arousal_expect_) <- as.integer(1:30)
 colnames(focus_expect_) <- as.integer(1:30)
 colnames(dominance_expect_) <- as.integer(1:30)
 
-valence_expect_[, "emotion_experience_group"] <- emotion_experience_group
-arousal_expect_[, "emotion_experience_group"] <- emotion_experience_group
-focus_expect_[, "emotion_experience_group"] <- emotion_experience_group
-dominance_expect_[, "emotion_experience_group"] <- emotion_experience_group
+valence_expect_[, "emotion_exppect_group"] <- emotion_expect_group
+arousal_expect_[, "emotion_exppect_group"] <- emotion_expect_group
+focus_expect_[, "emotion_exppect_group"] <- emotion_expect_group
+dominance_expect_[, "emotion_exppect_group"] <- emotion_expect_group
 
 valence_expect_[, "participant"] <- as.integer(1:476)
 arousal_expect_[, "participant"] <- as.integer(1:476)
 focus_expect_[, "participant"] <- as.integer(1:476)
 dominance_expect_[, "participant"] <- as.integer(1:476)
 
-valence_pe <- valence_traj_experience_[, 1:30] - valence_expect_[, 1:30]
-arousal_pe <- arousal_traj_experience_[, 1:30] - arousal_expect_[, 1:30]
-focus_pe <- focus_traj_experience_[, 1:30] - focus_expect_[, 1:30]
-dominance_pe <- dominance_traj_experience_[, 1:30] - dominance_expect_[, 1:30]
+rewexpect_group <- reward_expect_traj_times[, "rewexpect_group"]
+rewaccept_group <- reward_accept_traj_times[, "kmeans_group"]
 
-valence_pe[, "emotion_experience_group"] <- emotion_experience_group
-arousal_pe[, "emotion_experience_group"] <- emotion_experience_group
-focus_pe[, "emotion_experience_group"] <- emotion_experience_group
-dominance_pe[, "emotion_experience_group"] <- emotion_experience_group
+reward_expect_traj_times_ <- reward_expect_traj_times[, 1:30]
+colnames(reward_expect_traj_times_) <- as.integer(1:30)
+reward_expect_traj_times_[, "rewexpect_group"] <- rewexpect_group
+reward_expect_traj_times_[, "participant"] <- as.integer(1:476)
 
-valence_pe[, "participant"] <- as.integer(1:476)
-arousal_pe[, "participant"] <- as.integer(1:476)
-focus_pe[, "participant"] <- as.integer(1:476)
-dominance_pe[, "participant"] <- as.integer(1:476)
+reward_accept_traj_times_ <- reward_accept_traj_times[, 1:30]
+colnames(reward_accept_traj_times_) <- as.integer(1:30)
+reward_accept_traj_times_[, "rewaccept_group"] <- rewaccept_group
+reward_accept_traj_times_[, "participant"] <- as.integer(1:476)
 
-rew_exp_long <- pivot_longer(reward_expect_traj_times,
+rew_exp_long <- pivot_longer(reward_expect_traj_times_,
                              col = 1:30,
                              names_to = "time_point",
                              values_to = "RPRE")
-rew_acc_long <- pivot_longer(reward_accept_traj_times,
+rew_acc_long <- pivot_longer(reward_accept_traj_times_,
                              col = 1:30,
                              names_to = "time_point",
                              values_to = "acceptance")
@@ -462,17 +459,19 @@ df_all[, "VPE"] <- df_all[, "VPOST"] - df_all[, "VPRE"]
 df_all[, "APE"] <- df_all[, "APOST"] - df_all[, "APRE"]
 df_all[, "FPE"] <- df_all[, "FPOST"] - df_all[, "FPRE"]
 df_all[, "DPE"] <- df_all[, "DPOST"] - df_all[, "DPRE"]
-df_all$FPRE <- df_all$FPRE - 5
-df_all$DPRE <- df_all$DPRE - 5
-df_all$FPOST <- df_all$FPOST - 5
-df_all$DPOST <- df_all$DPOST - 5
+df_all$FPRE <- df_all$FPRE - 5 # normalize to be in range [-4, 4]
+df_all$DPRE <- df_all$DPRE - 5 # normalize to be in range [-4, 4]
+df_all$FPOST <- df_all$FPOST - 5 # normalize to be in range [-4, 4]
+df_all$DPOST <- df_all$DPOST - 5 # normalize to be in range [-4, 4]
 
 write.csv(df_all, 
           file='emotion_alltime_melt_N476.csv',
           fileEncoding='UTF-8',
           row.names=TRUE)
 
-### Scaling each predictors
+### Scaling each predictors without mean centering
+### mean centering is omitted because zero values of expectation, experience, and prediction error
+### can be meaningful, following the methods proposed by Heffner, Son, and FeldmanHall (2021), Heffner and FeldmanHall (2022)
 df_all$RPRE <- scale(df_all$RPRE, center = F)
 df_all$VPRE <- scale(df_all$VPRE, center = F)
 df_all$APRE <- scale(df_all$APRE, center = F)
@@ -495,7 +494,8 @@ df_all_group2 <- df_all %>% filter(emotion_experience_group == 1)
 df_all_group3 <- df_all %>% filter(emotion_experience_group == 2)
 df_all_group4 <- df_all %>% filter(emotion_experience_group == 3)
 
-# Table 2
+
+# Table 2 : GLMM results for the most complex model
 table_PE_m5 <- glmer(acceptance ~ RPE + VPE + APE + FPE + DPE + (1 + RPE + VPE + APE + FPE + DPE| participant), 
                      data = df_all,
                      family = binomial,
@@ -508,7 +508,7 @@ tab_model(table_PE_m5, transform = NULL, title = "Contribution of RPE and EPEs o
           show.re.var = FALSE, show.aic = FALSE, show.dev = FALSE, 
           show.r2 = FALSE, show.icc = FALSE, show.obs = TRUE,
           CSS = css_theme("regression"), file = str_c(dir_graphs, "/table_PE_m5.html"))
-
+# GLMM results for simpler models with nested structures
 table_PE_m1a <- glmer(acceptance ~ VPE + (1 + VPE | participant), 
                      data = df_all,
                      family = binomial,
@@ -549,7 +549,7 @@ anova(table_PE_m3a, table_PE_m4a)
 anova(table_PE_m4a, table_PE_m5)
 
 
-# Table 3
+# Table 3 : GLMM analyses for each subgroup
 table_PE_m5_group1 <- glmer(acceptance ~ RPE + VPE + APE + FPE + DPE + (1 + RPE + VPE + APE + FPE + DPE| participant), 
                             data = df_all_group1,
                             family = binomial,
@@ -601,3 +601,158 @@ tab_model(table_PE_m5_group4, transform = NULL, title = "Contribution of RPE and
           show.re.var = FALSE, show.aic = FALSE, show.dev = FALSE, 
           show.r2 = FALSE, show.icc = FALSE, show.obs = TRUE,
           CSS = css_theme("regression"), file = str_c(dir_graphs, "/table_PE_m5_group4.html"))
+
+# Significance of centroid mean comparison
+set.seed(123)
+#reward_accept_traj_times
+valence_expect_long <- pivot_longer(valence_expect,
+                                    col = 1:30,
+                                    names_to = "time_point",
+                                    values_to = "VPRE")
+
+arousal_expect_long <- pivot_longer(arousal_expect,
+                                    col = 1:30,
+                                    names_to = "time_point",
+                                    values_to = "APRE")
+
+focus_expect_long <- pivot_longer(focus_expect,
+                                    col = 1:30,
+                                    names_to = "time_point",
+                                    values_to = "FPRE")
+
+dominance_expect_long <- pivot_longer(dominance_expect,
+                                    col = 1:30,
+                                    names_to = "time_point",
+                                    values_to = "DPRE")
+
+valence_expect_long1 <- valence_expect_long %>% filter(emotion_expect_group == 0)
+valence_expect_long2 <- valence_expect_long %>% filter(emotion_expect_group == 1)
+valence_expect_long3 <- valence_expect_long %>% filter(emotion_expect_group == 2)
+valence_expect_long4 <- valence_expect_long %>% filter(emotion_expect_group == 3)
+
+arousal_expect_long1 <- arousal_expect_long %>% filter(emotion_expect_group == 0)
+arousal_expect_long2 <- arousal_expect_long %>% filter(emotion_expect_group == 1)
+arousal_expect_long3 <- arousal_expect_long %>% filter(emotion_expect_group == 2)
+arousal_expect_long4 <- arousal_expect_long %>% filter(emotion_expect_group == 3)
+
+focus_expect_long1 <- focus_expect_long %>% filter(emotion_expect_group == 0)
+focus_expect_long2 <- focus_expect_long %>% filter(emotion_expect_group == 1)
+focus_expect_long3 <- focus_expect_long %>% filter(emotion_expect_group == 2)
+focus_expect_long4 <- focus_expect_long %>% filter(emotion_expect_group == 3)
+
+dominance_expect_long1 <- dominance_expect_long %>% filter(emotion_expect_group == 0)
+dominance_expect_long2 <- dominance_expect_long %>% filter(emotion_expect_group == 1)
+dominance_expect_long3 <- dominance_expect_long %>% filter(emotion_expect_group == 2)
+dominance_expect_long4 <- dominance_expect_long %>% filter(emotion_expect_group == 3)
+### Mean values for each expected emotion group (Table S3)
+print(c(mean(valence_expect_long1[["VPRE"]]), 
+        mean(valence_expect_long2[["VPRE"]]), 
+        mean(valence_expect_long3[["VPRE"]]), 
+        mean(valence_expect_long4[["VPRE"]])))
+
+print(c(mean(arousal_expect_long1[["APRE"]]), 
+        mean(arousal_expect_long2[["APRE"]]), 
+        mean(arousal_expect_long3[["APRE"]]), 
+        mean(arousal_expect_long4[["APRE"]])))
+
+print(c(mean(focus_expect_long1[["FPRE"]]) - 5, # normalize to be in range [-4, 4]
+        mean(focus_expect_long2[["FPRE"]]) - 5, # normalize to be in range [-4, 4]
+        mean(focus_expect_long3[["FPRE"]]) - 5, # normalize to be in range [-4, 4]
+        mean(focus_expect_long4[["FPRE"]]) - 5)) # normalize to be in range [-4, 4]
+
+print(c(mean(dominance_expect_long1[["DPRE"]]) - 5, # normalize to be in range [-4, 4]
+        mean(dominance_expect_long2[["DPRE"]]) - 5, # normalize to be in range [-4, 4]
+        mean(dominance_expect_long3[["DPRE"]]) - 5, # normalize to be in range [-4, 4]
+        mean(dominance_expect_long4[["DPRE"]]) - 5)) # normalize to be in range [-4, 4]
+### Mean value comparison for each expected emotion group (Table S3)
+model_expect_val <- aov(VPRE~as.factor(emotion_expect_group), data=valence_expect_long) #one-way ANOVA for existence of group difference
+summary(model_expect_val)
+TukeyHSD(model_expect_val, conf.level=.95)
+
+model_expect_aro <- aov(APRE~as.factor(emotion_expect_group), data=arousal_expect_long) #one-way ANOVA for existence of group difference
+summary(model_expect_aro)
+TukeyHSD(model_expect_aro, conf.level=.95)
+
+model_expect_foc <- aov(FPRE~as.factor(emotion_expect_group), data=focus_expect_long) #one-way ANOVA for existence of group difference
+summary(model_expect_foc)
+TukeyHSD(model_expect_foc, conf.level=.95)
+
+model_expect_dom <- aov(DPRE~as.factor(emotion_expect_group), data=dominance_expect_long) #one-way ANOVA for existence of group difference
+summary(model_expect_dom)
+TukeyHSD(model_expect_dom, conf.level=.95)
+
+valence_experience_long <- pivot_longer(valence_traj_experience,
+                                    col = 1:30,
+                                    names_to = "time_point",
+                                    values_to = "VPOST")
+
+arousal_experience_long <- pivot_longer(arousal_traj_experience,
+                                    col = 1:30,
+                                    names_to = "time_point",
+                                    values_to = "APOST")
+
+focus_experience_long <- pivot_longer(focus_traj_experience,
+                                  col = 1:30,
+                                  names_to = "time_point",
+                                  values_to = "FPOST")
+
+dominance_experience_long <- pivot_longer(dominance_traj_experience,
+                                      col = 1:30,
+                                      names_to = "time_point",
+                                      values_to = "DPOST")
+
+valence_experience_long1 <- valence_experience_long %>% filter(emotion_experience_group == 0)
+valence_experience_long2 <- valence_experience_long %>% filter(emotion_experience_group == 1)
+valence_experience_long3 <- valence_experience_long %>% filter(emotion_experience_group == 2)
+valence_experience_long4 <- valence_experience_long %>% filter(emotion_experience_group == 3)
+
+arousal_experience_long1 <- arousal_experience_long %>% filter(emotion_experience_group == 0)
+arousal_experience_long2 <- arousal_experience_long %>% filter(emotion_experience_group == 1)
+arousal_experience_long3 <- arousal_experience_long %>% filter(emotion_experience_group == 2)
+arousal_experience_long4 <- arousal_experience_long %>% filter(emotion_experience_group == 3)
+
+focus_experience_long1 <- focus_experience_long %>% filter(emotion_experience_group == 0)
+focus_experience_long2 <- focus_experience_long %>% filter(emotion_experience_group == 1)
+focus_experience_long3 <- focus_experience_long %>% filter(emotion_experience_group == 2)
+focus_experience_long4 <- focus_experience_long %>% filter(emotion_experience_group == 3)
+
+dominance_experience_long1 <- dominance_experience_long %>% filter(emotion_experience_group == 0)
+dominance_experience_long2 <- dominance_experience_long %>% filter(emotion_experience_group == 1)
+dominance_experience_long3 <- dominance_experience_long %>% filter(emotion_experience_group == 2)
+dominance_experience_long4 <- dominance_experience_long %>% filter(emotion_experience_group == 3)
+### Mean values for each experienced emotion group (Table S3)
+print(c(mean(valence_experience_long1[["VPOST"]]), 
+        mean(valence_experience_long2[["VPOST"]]), 
+        mean(valence_experience_long3[["VPOST"]]), 
+        mean(valence_experience_long4[["VPOST"]])))
+
+print(c(mean(arousal_experience_long1[["APOST"]]), 
+        mean(arousal_experience_long2[["APOST"]]), 
+        mean(arousal_experience_long3[["APOST"]]), 
+        mean(arousal_experience_long4[["APOST"]])))
+
+print(c(mean(focus_experience_long1[["FPOST"]]) - 5, # normalize to be in range [-4, 4]
+        mean(focus_experience_long2[["FPOST"]]) - 5, # normalize to be in range [-4, 4]
+        mean(focus_experience_long3[["FPOST"]]) - 5, # normalize to be in range [-4, 4]
+        mean(focus_experience_long4[["FPOST"]]) - 5)) # normalize to be in range [-4, 4]
+
+print(c(mean(dominance_experience_long1[["DPOST"]]) - 5, # normalize to be in range [-4, 4]
+        mean(dominance_experience_long2[["DPOST"]]) - 5, # normalize to be in range [-4, 4]
+        mean(dominance_experience_long3[["DPOST"]]) - 5, # normalize to be in range [-4, 4]
+        mean(dominance_experience_long4[["DPOST"]]) - 5)) # normalize to be in range [-4, 4]
+### Mean value comparison for each experienced emotion group (Table S3)
+model_experience_val <- aov(VPOST~as.factor(emotion_experience_group), data=valence_experience_long) #one-way ANOVA for existence of group difference
+summary(model_experience_val)
+TukeyHSD(model_experience_val, conf.level=.95)
+
+model_experience_aro <- aov(APOST~as.factor(emotion_experience_group), data=arousal_experience_long) #one-way ANOVA for existence of group difference
+summary(model_experience_aro)
+TukeyHSD(model_experience_aro, conf.level=.95)
+
+model_experience_foc <- aov(FPOST~as.factor(emotion_experience_group), data=focus_experience_long) #one-way ANOVA for existence of group difference
+summary(model_experience_foc)
+TukeyHSD(model_experience_foc, conf.level=.95)
+
+model_experience_dom <- aov(DPOST~as.factor(emotion_experience_group), data=dominance_experience_long) #one-way ANOVA for existence of group difference
+summary(model_experience_dom)
+TukeyHSD(model_experience_dom, conf.level=.95)
